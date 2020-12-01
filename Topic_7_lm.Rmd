@@ -27,6 +27,7 @@ library(tidyr)
 library(readr)
 library(lme4)
 library (lmerTest)
+library(nlme)
 ```
 
 
@@ -174,7 +175,7 @@ The statistical hypotheses are as follow:
 + Null hypothesis (H~0~): the coefficients are equal to zero (i.e., no relationship between x and y)
 + Alternative Hypothesis (H~1~): the coefficients are not equal to zero (i.e., there is some relationship between $x$ and $y$)
 
-Mathematically (no need to remember), for a given beta coefficient ($\beta$), the t-test is computed as $t = (\beta - 0)/SE(\beta)$, where $SE(\beta)$ is the $\beta$ of the coefficient b. The t-statistic measures the number of standard deviations that $\beta$ is away from 0. Thus a large t-statistic will produce a small p-value.
+Mathematically (no need to remember), for a given beta coefficient ($\beta$), the t-test is computed as $t = (\beta - 0)/SE(\beta)$, where $SE(\beta)$ is the SE of the coefficient $\beta$. The t-statistic measures the number of standard deviations that $\beta$ is away from 0. Thus a large t-statistic will produce a small p-value.
 
 The higher the t-statistic (and the lower the p-value), the more significant the predictor. The symbols to the right visually specifies the level of significance. The line below the table shows the definition of these symbols; one star means 0.01 < p < 0.05. The more the stars beside the variable’s p-value, the more significant the variable.
 
@@ -356,6 +357,7 @@ Both BIC and AIC can be computed in `R` through the functions `BIC` and `AIC`. T
 
 ```{r,  eval=T, warning=F, message=F}
 BIC(model3); BIC(model4);BIC(model5)
+model3 <- lm(Petal.Width ~., data = iris[,1:4])
 AIC(model3); AIC(model4);AIC(model5)
 ```
 
@@ -868,7 +870,7 @@ shag.p
 
 *European shag abundance on the Isle of May, Scotland, between 1970 and 2006. Points represent raw data and model fit represents a generalised linear model with 95% confidence intervals.*
 
-### A model with a Poisson distribution
+### A model with a binomial distribution
 
 We will now work this the `Weevil_damage`. We can examine if damage to Scot’s pine by weevils (a binary, `TRUE`/`FALSE` variable) varies based on the block in which the trees are located. You can imagine that different blocks represent different Scot’s pine populations, and perhaps some of them will be particularly vulnerable to weevils? Because of the binary nature of the response variable (true or false), a binomial model is appropriate here.
 
@@ -886,7 +888,7 @@ The probability of a pine tree enduring damage from weevils does vary significan
 You won’t get a R squared value to assess the goodness of fit of your model, but you can get at that by looking at the difference between the Null deviance (variability explained by a null model, *e.g.* `glm(damage_T_F ~ 1, family = binomial, data = Weevil_damage)` and the Residual deviance, *e.g.* the amount of variability that remains after you’ve explained some away by your explanatory variable. In short, the bigger the reduction in deviance, the better a job your model is doing at explaining a relationship.
 
 
-## Taking Account the Random Effects
+## Taking Account of the Random Effects
 
 A **random effect** can be used in the case of **paired data** or **repeated measures**. As an example, if we are measuring the **length** of several **individual** plants, the measurements are paired within each individual.  That is, we want to statistically match the length at different days of one individual, since we supposed we may have difference in the initial length and therefore different growth. Therefore, in this case, the variable 'individual' must be include in the model as a random variable. Often, we want to disregard the effect of this random factor (e.g. individual difference) to focus on another one (e.g. growth itself). Each Individual could be thought of has a block including a measurement for the length.
 
@@ -925,8 +927,7 @@ One way to extract the p-value is by using the `lmerTest` package to produce an 
 
 
 ```{r,  eval=T, warning=F, message=F}
-lmer.rai<-lmer(length ~ day + (1|ID), data=rai, REML=TRUE) # REML default
-summary(lmer.rai)
+anova(lmer.rai)
 ```
 
 The `rand` function from the `lmerTest` package will test the random effects in the model
@@ -937,21 +938,20 @@ rand(lmer.rai)
 
 In addition,  The `lmerTest` package is used to produce an analysis of variance with p-values for model effects. However, in our case, a simple linear regression with a random factor, we will use another function to extract the p-value from our model.
 
-#### Mixed model with `nmle`
+#### Mixed model with `nlme`
 
-We will use the function `lme` form the package `nmle`
+We will use the function `lme` form the package `nlme`
 
 Notice the grammar in the `lme` function that defines the model is slightly different form the previous example:  the option `random = ~1|ID` is added to the model to indicate that `ID` is the random term.
 
-```{r,  eval=F, warning=F, message=F}
-#install.packages("https://cran.r-project.org/src/contrib/nlme_3.1-150.tar.gz", repos=NULL, type="source", ask=FALSE)
+```{r,  eval=T, warning=F, message=F}
 lme.rai = lme(length ~ day, random=~1|ID, data=rai)
 summary(lme.rai)
 ```
 
 The random effects in the model can be tested by comparing the model to a model fitted with just the fixed effects and excluding the random effects. 
 
-```{r,  eval=F, warning=F, message=F}
+```{r,  eval=T, warning=F, message=F}
 lm.rai<-lm(length ~ day, data= rai)
 anova (lme.rai, lm.rai)
 ```
